@@ -74,6 +74,7 @@ void pause_sec(float x);
 uint32_t pollADC(void);
 uint32_t ADCtoCRR(uint32_t adc_val);
 uint8_t decToBcd(uint32_t val);
+void setLEDonReceive(char num);
 
 /* USER CODE END PFP */
 
@@ -136,7 +137,7 @@ int main(void)
 	  sprintf(buffer, "%ld\n\r",decToBcd(pollADC()));
 	  HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 1000);
 
-	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8,)
+	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_SET)
 
 
     /* USER CODE END WHILE */
@@ -473,6 +474,19 @@ uint8_t decToBcd(uint32_t val)
 	//Convert decimal numbers to binary coded decimal
 
 		return (uint8_t)((val/10*16) + (val%10));
+}
+
+void setLEDonReceive(char num)
+{
+	//Convert a char from the message received into an output on the LED
+	if(num == '49') //49 is ascii for 1
+	{
+		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_SET); //LED on if 1
+	}
+	else if(num == '48') //48 is ascii for 0
+	{
+		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_RESET); //LED off if 0
+	}
 }
 
 /* USER CODE END 4 */
