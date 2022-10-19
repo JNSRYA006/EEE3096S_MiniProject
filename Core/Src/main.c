@@ -52,6 +52,7 @@ DMA_HandleTypeDef hdma_usart2_tx;
 
 /* USER CODE BEGIN PV */
 char buffer[24];
+char data[64];
 
 //TO DO:
 //TASK 1
@@ -71,6 +72,7 @@ static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
 void EXTI0_1_IRQHandler(void);
 void pause_sec(float x);
+void sendData(char data)
 uint32_t pollADC(void);
 uint32_t ADCtoCRR(uint32_t adc_val);
 uint8_t decToBcd(uint32_t val);
@@ -136,7 +138,10 @@ int main(void)
 	  sprintf(buffer, "%ld\n\r",decToBcd(pollADC()));
 	  HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 1000);
 
-	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8,)
+	  //sprintf(buffer, "%ld\n\r",sendData('0b10101010'));
+	  //HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 1000);
+	  //HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8,);
+	  sendData('0b10101100');
 
 
     /* USER CODE END WHILE */
@@ -473,6 +478,21 @@ uint8_t decToBcd(uint32_t val)
 	//Convert decimal numbers to binary coded decimal
 
 		return (uint8_t)((val/10*16) + (val%10));
+}
+
+void sendData (char data) {
+
+	int length = strlen(data);
+	for (int i = 0; i < length; i ++) {
+		if (data[i] == '49') {
+			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8,GPIO_PIN_SET);
+			pause_sec(0.5);
+		}
+		else if (data[i] == '48') {
+			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8,GPIO_PIN_RESET);
+			pause_sec(0.5);
+		}
+	}
 }
 
 /* USER CODE END 4 */
