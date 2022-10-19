@@ -70,8 +70,10 @@ static void MX_ADC_Init(void);
 static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
 void EXTI0_1_IRQHandler(void);
+void pause_sec(float x);
 uint32_t pollADC(void);
 uint32_t ADCtoCRR(uint32_t adc_val);
+uint8_t decToBcd(uint32_t val);
 
 /* USER CODE END PFP */
 
@@ -125,33 +127,18 @@ int main(void)
   {
 	  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_8); // Toggle blue LED
 
-
-	  //TASK 2
 	  //Test the pollADC function and display it via UART
 	  //ADC has a maximum value of 4095, which is a resolution of 12 bits
-
-	  sprintf(buffer, "ADC:%ld\n\r",pollADC());
+	  pause_sec(2);
+	  sprintf(buffer, "%ld\n\r",pollADC());
 	  HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 1000);
 
-	  //TASK 3
-	  /*Test your ADCtoCRR function. Display CRR value via UART
-	   *As the potentiometer is adjusted from 0, the Duty cycle can be seen to
-	   *increase up to the maximum value of 47999
-	   */
-
-	  uint32_t ccr_val = ADCtoCRR(pollADC());
-	  uint32_t dutypercent = (ccr_val/47999)*100;
-	  sprintf(buffer, "Duty:%ld\n\r", ccr_val);
+	  sprintf(buffer, "%ld\n\r",decToBcd(pollADC()));
 	  HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 1000);
-	  __HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_4, ccr_val);
+
+	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8,)
 
 
-	  //TASK 4
-	  //Complete rest of implementation
-
-	  sprintf(buffer, "-------\n\r");
-	  HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 1000);
-	  HAL_Delay (DELAY);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -190,7 +177,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV256;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
@@ -384,6 +371,9 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(LD4_GPIO_Port, LD4_Pin, GPIO_PIN_RESET);
 
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_RESET);
+
   /*Configure GPIO pin : B1_Pin */
   GPIO_InitStruct.Pin = B1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
@@ -396,6 +386,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LD4_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PA8 */
+  GPIO_InitStruct.Pin = GPIO_PIN_8;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PB6 PB7 */
   GPIO_InitStruct.Pin = GPIO_PIN_6|GPIO_PIN_7;
@@ -455,6 +452,27 @@ uint32_t ADCtoCRR(uint32_t adc_val){
 		}
 
 		return CRR;
+}
+
+void pause_sec(float x)
+{
+	//Delay program execution for x seconds
+	int todo = 0;
+	for (int i = 0;i<DELAY1;i++)
+	{
+		for (int j =0 ;j<DELAY2*x;j++)
+		{
+			todo ++;
+		}
+	}
+
+}
+
+uint8_t decToBcd(uint32_t val)
+{
+	//Convert decimal numbers to binary coded decimal
+
+		return (uint8_t)((val/10*16) + (val%10));
 }
 
 /* USER CODE END 4 */
