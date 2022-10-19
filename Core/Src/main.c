@@ -487,6 +487,7 @@ void setLEDonReceive(char num)
 	{
 		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_RESET); //LED off if 0
 	}
+	//checking branch
 }
 
 /* USER CODE END 4 */
