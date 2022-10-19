@@ -1,18 +1,21 @@
 /* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * @file           : main.c
-  * @brief          : Main program body
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2022 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
+*******************************************************
+Info:		EEE3096S Mini Project Part A 2022
+Author:		Ryan Jones, Natasha Soldin, Kamryn Norton, Khavish Govind
+*******************************************************
+In this practical you will learn to use the ADC on the STM32 using the HAL.
+Here, we will be measuring the voltage on a potentiometer and using its value
+to adjust the brightness of the on board LEDs. We set up an interrupt to switch the
+display between the blue and green LEDs.
+
+Code is also provided to send data from the STM32 to other devices using UART protocol
+by using HAL. You will need Putty or a Python script to read from the serial port on your PC.
+
+UART Connections are as follows: 5V->5V GND->GND RXD->PA2 TXD->PA3(unused).
+Open device manager and go to Ports. Plug in the USB connector with the STM powered on.
+Check the port number (COMx). Open up Putty and create a new Serial session on that COMx
+with baud rate of 9600.
   ******************************************************************************
   */
 /* USER CODE END Header */
@@ -48,6 +51,13 @@ UART_HandleTypeDef huart2;
 DMA_HandleTypeDef hdma_usart2_tx;
 
 /* USER CODE BEGIN PV */
+char buffer[24];
+
+//TO DO:
+//TASK 1
+//Create global variables for debouncing and delay interval
+int DELAY = 1000; //Set initial delay to 1000ms = 1s
+int freq = 1;
 
 /* USER CODE END PV */
 
@@ -59,6 +69,9 @@ static void MX_USART2_UART_Init(void);
 static void MX_ADC_Init(void);
 static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
+void EXTI0_1_IRQHandler(void);
+uint32_t pollADC(void);
+uint32_t ADCtoCRR(uint32_t adc_val);
 
 /* USER CODE END PFP */
 
@@ -101,12 +114,44 @@ int main(void)
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
 
+  //Create variables needed in while loop
+
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_4); //Start the PWM on TIM3 Channel 4 (Green LED)
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_8); // Toggle blue LED
+
+
+	  //TASK 2
+	  //Test the pollADC function and display it via UART
+	  //ADC has a maximum value of 4095, which is a resolution of 12 bits
+
+	  sprintf(buffer, "ADC:%ld\n\r",pollADC());
+	  HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 1000);
+
+	  //TASK 3
+	  /*Test your ADCtoCRR function. Display CRR value via UART
+	   *As the potentiometer is adjusted from 0, the Duty cycle can be seen to
+	   *increase up to the maximum value of 47999
+	   */
+
+	  uint32_t ccr_val = ADCtoCRR(pollADC());
+	  uint32_t dutypercent = (ccr_val/47999)*100;
+	  sprintf(buffer, "Duty:%ld\n\r", ccr_val);
+	  HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 1000);
+	  __HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_4, ccr_val);
+
+
+	  //TASK 4
+	  //Complete rest of implementation
+
+	  sprintf(buffer, "-------\n\r");
+	  HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 1000);
+	  HAL_Delay (DELAY);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -367,6 +412,50 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void EXTI0_1_IRQHandler(void)
+{
+
+	//TASK 1
+	//Switch delay frequency
+
+	if (DELAY == 1000) {
+		DELAY = 2000;
+	}
+	else {
+		DELAY = 1000;
+	}
+
+	HAL_GPIO_EXTI_IRQHandler(B1_Pin); // Clear interrupt flags
+}
+
+uint32_t pollADC(void){
+
+	//TASK 1
+	HAL_ADC_Start(&hadc); //Start the ADC
+
+	HAL_ADC_PollForConversion(&hadc, 1); //Poll for conversion
+
+	uint32_t adc_val = HAL_ADC_GetValue(&hadc); //Get the ADC value
+
+	HAL_ADC_Stop(&hadc); //Stop ADC
+
+	return adc_val; //Return the ADC Value
+
+	// Code referenced from: https://controllerstech.com/stm32-adc-single-channel/
+}
+
+uint32_t ADCtoCRR(uint32_t adc_val){
+
+	//TASK 2
+	int CRR = 4095;
+
+		if (adc_val<=4095)
+		{
+			CRR = (adc_val*47999)/4095;
+		}
+
+		return CRR;
+}
 
 /* USER CODE END 4 */
 
