@@ -60,8 +60,8 @@ all: main-build
 main-build: EEE3096S_2022_MiniProject.elf secondary-outputs
 
 # Tool invocations
-EEE3096S_2022_MiniProject.elf EEE3096S_2022_MiniProject.map: $(OBJS) $(USER_OBJS) C:\Users\ryanj\OneDrive\ -\ University\ of\ Cape\ Town\Third\ Year\Second\ Semester\EEE3096S\MiniProject\repo\MiniProject\EEE3096S_MiniProject\STM32F051R8TX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "EEE3096S_2022_MiniProject.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m0 -T"C:\Users\ryanj\OneDrive - University of Cape Town\Third Year\Second Semester\EEE3096S\MiniProject\repo\MiniProject\EEE3096S_MiniProject\STM32F051R8TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="EEE3096S_2022_MiniProject.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+EEE3096S_2022_MiniProject.elf EEE3096S_2022_MiniProject.map: $(OBJS) $(USER_OBJS) C:\Users\kamry\OneDrive\Documents\2022\Semester\ 2\EEE3096S\ -\ Embedded\ Systems\ II\Mini\ Project\EEE3096S_MiniProject\STM32F051R8TX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "EEE3096S_2022_MiniProject.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m0 -T"C:\Users\kamry\OneDrive\Documents\2022\Semester 2\EEE3096S - Embedded Systems II\Mini Project\EEE3096S_MiniProject\STM32F051R8TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="EEE3096S_2022_MiniProject.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

@@ -56,7 +56,8 @@ char buffer[24];
 //TO DO:
 //TASK 1
 //Create global variables for debouncing and delay interval
-int DELAY = 1000; //Set initial delay to 1000ms = 1s
+int DELAY1 = 66; //Set initial delay to 1000ms = 1s
+int DELAY2 = 2003;
 int freq = 1;
 
 /* USER CODE END PV */
@@ -126,19 +127,20 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_8); // Toggle blue LED
 
 	  //Test the pollADC function and display it via UART
 	  //ADC has a maximum value of 4095, which is a resolution of 12 bits
-	  pause_sec(2);
+	  //pause_sec(2);
 	  sprintf(buffer, "%ld\n\r",pollADC());
 	  HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 1000);
 
 	  sprintf(buffer, "%ld\n\r",decToBcd(pollADC()));
 	  HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 1000);
 
-	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_SET)
-
+	  //setting data in
+	  //char datain = '1';
+	  setLEDonReceive('1');
+	  HAL_Delay(500); //delay 500ms
 
     /* USER CODE END WHILE */
 
@@ -410,21 +412,7 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-void EXTI0_1_IRQHandler(void)
-{
 
-	//TASK 1
-	//Switch delay frequency
-
-	if (DELAY == 1000) {
-		DELAY = 2000;
-	}
-	else {
-		DELAY = 1000;
-	}
-
-	HAL_GPIO_EXTI_IRQHandler(B1_Pin); // Clear interrupt flags
-}
 
 uint32_t pollADC(void){
 
@@ -478,16 +466,17 @@ uint8_t decToBcd(uint32_t val)
 
 void setLEDonReceive(char num)
 {
+	int numInt = (int)num;
 	//Convert a char from the message received into an output on the LED
-	if(num == '49') //49 is ascii for 1
+	if(num == 49) //49 is ascii for 1
 	{
 		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_SET); //LED on if 1
 	}
-	else if(num == '48') //48 is ascii for 0
+	else if(num == 48) //48 is ascii for 0
 	{
 		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_RESET); //LED off if 0
 	}
-	//checking branch
+
 }
 
 /* USER CODE END 4 */
