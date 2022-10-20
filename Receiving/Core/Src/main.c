@@ -52,6 +52,7 @@ DMA_HandleTypeDef hdma_usart2_tx;
 
 /* USER CODE BEGIN PV */
 char buffer[24];
+char adcChar[16];
 
 //TO DO:
 //TASK 1
@@ -76,6 +77,8 @@ uint32_t pollADC(void);
 uint32_t ADCtoCRR(uint32_t adc_val);
 uint8_t decToBcd(uint32_t val);
 void setLEDonReceive(char num);
+void ADCtoChar(uint32_t val);
+void sendData(char data[]);
 
 /* USER CODE END PFP */
 
@@ -134,13 +137,16 @@ int main(void)
 	  sprintf(buffer, "%ld\n\r",pollADC());
 	  HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 1000);
 
-	  sprintf(buffer, "%ld\n\r",decToBcd(pollADC()));
+	  //sprintf(buffer, "%ld\n\r",decToBcd(pollADC()));
+	  //HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 1000);
+	  ADCtoChar(pollADC());
+	  sprintf(buffer, "%d\n\r", pollADC());
 	  HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 1000);
 
 	  //setting data in
 	  //char datain = '1';
 	  setLEDonReceive('1');
-	  HAL_Delay(500); //delay 500ms
+	  HAL_Delay(2000); //delay 500ms
 
     /* USER CODE END WHILE */
 
@@ -477,6 +483,37 @@ void setLEDonReceive(char num)
 		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_RESET); //LED off if 0
 	}
 
+}
+
+void bin(uint32_t n)
+{
+    unsigned i;
+    for (i = 1 << 31; i > 0; i = i / 2)
+        (n & i) ? printf("1") : printf("0");
+}
+
+
+void sendData (char data[]) {
+
+	int length = strlen(data);
+	for (int i = 0; i < length; i ++) {
+		if ((int)(data[i]) == 49) {
+			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8,GPIO_PIN_SET);
+			HAL_Delay(500);
+		}
+		else if ((int)(data[i]) == 48) {
+			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8,GPIO_PIN_RESET);
+			HAL_Delay(500);
+		}
+	}
+}
+
+void ADCtoChar (uint32_t val) {
+
+	int i;
+	for (i = 31; i >= 0; --i) {
+		adcChar[i] = val >> i & 1;
+	    }
 }
 
 /* USER CODE END 4 */
