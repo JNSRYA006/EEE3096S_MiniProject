@@ -51,8 +51,11 @@ UART_HandleTypeDef huart2;
 DMA_HandleTypeDef hdma_usart2_tx;
 
 /* USER CODE BEGIN PV */
+#define DELAY1 66
+#define DELAY2 2003
 char buffer[24];
 char data[64];
+char adcChar[12];
 
 //TO DO:
 //TASK 1
@@ -72,7 +75,7 @@ static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
 void EXTI0_1_IRQHandler(void);
 void pause_sec(float x);
-void sendData(char data)
+void sendData(char data[]);
 uint32_t pollADC(void);
 uint32_t ADCtoCRR(uint32_t adc_val);
 uint8_t decToBcd(uint32_t val);
@@ -131,18 +134,20 @@ int main(void)
 
 	  //Test the pollADC function and display it via UART
 	  //ADC has a maximum value of 4095, which is a resolution of 12 bits
-	  pause_sec(2);
+	  //pause_sec(2);
 	  sprintf(buffer, "%ld\n\r",pollADC());
 	  HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 1000);
 
-	  sprintf(buffer, "%ld\n\r",decToBcd(pollADC()));
+	  //Testing char array from adc uint value
+	  ADCtoChar(pollADC());
+	  sprintf(buffer, "%ld\n\r",adcChar);
 	  HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 1000);
 
 	  //sprintf(buffer, "%ld\n\r",sendData('0b10101010'));
 	  //HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 1000);
 	  //HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8,);
 	  sendData('0b10101100');
-
+	  HAL_Delay(500);
 
     /* USER CODE END WHILE */
 
@@ -459,19 +464,6 @@ uint32_t ADCtoCRR(uint32_t adc_val){
 		return CRR;
 }
 
-void pause_sec(float x)
-{
-	//Delay program execution for x seconds
-	int todo = 0;
-	for (int i = 0;i<DELAY1;i++)
-	{
-		for (int j =0 ;j<DELAY2*x;j++)
-		{
-			todo ++;
-		}
-	}
-
-}
 
 uint8_t decToBcd(uint32_t val)
 {
@@ -480,19 +472,27 @@ uint8_t decToBcd(uint32_t val)
 		return (uint8_t)((val/10*16) + (val%10));
 }
 
-void sendData (char data) {
+void sendData (char data[]) {
 
 	int length = strlen(data);
 	for (int i = 0; i < length; i ++) {
-		if (data[i] == '49') {
+		if ((int)(data[i]) == 49) {
 			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8,GPIO_PIN_SET);
-			pause_sec(0.5);
+			HAL_Delay(500);
 		}
-		else if (data[i] == '48') {
+		else if ((int)(data[i]) == 48) {
 			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8,GPIO_PIN_RESET);
-			pause_sec(0.5);
+			HAL_Delay(500);
 		}
 	}
+}
+
+void ADCtoChar (uint32_t val) {
+
+	int i;
+	for (i = 31; i >= 0; --i) {
+		adcChar[i] = val >> i & 1;
+	    }
 }
 
 /* USER CODE END 4 */
