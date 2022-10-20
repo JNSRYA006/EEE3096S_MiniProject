@@ -55,7 +55,8 @@ DMA_HandleTypeDef hdma_usart2_tx;
 #define DELAY2 2003
 char buffer[24];
 char data[64];
-char adcChar[12];
+char binaryShort[12];
+char message[28];
 
 //TO DO:
 //TASK 1
@@ -79,6 +80,8 @@ void sendData(char data[]);
 uint32_t pollADC(void);
 uint32_t ADCtoCRR(uint32_t adc_val);
 uint8_t decToBcd(uint32_t val);
+void dataConversion(uint32_t adcVal);
+void messageProtocol(char binaryData[]);
 
 /* USER CODE END PFP */
 
@@ -135,20 +138,23 @@ int main(void)
 	  //Test the pollADC function and display it via UART
 	  //ADC has a maximum value of 4095, which is a resolution of 12 bits
 	  //pause_sec(2);
-	  sprintf(buffer, "%ld\n\r",pollADC());
+	  sprintf(buffer, "adc: %ld\n\r",500);
 	  HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 1000);
 
 	  //Testing char array from adc uint value
-	  ADCtoChar(pollADC());
-	  sprintf(buffer, "%ld\n\r",adcChar);
-	  HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 1000);
+	  dataConversion(500);
+	  messageProtocol(binaryShort);
+	  for (int i =0; i <= 32; i++) {
+		  sprintf(buffer, "msg: %c\n\r",message[i]);
+		  HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 1000);
+		  HAL_Delay(200);
+	  }
 
 	  //sprintf(buffer, "%ld\n\r",sendData('0b10101010'));
 	  //HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 1000);
 	  //HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8,);
-	  sendData('0b10101100');
-	  HAL_Delay(500);
-
+	  //sendData('0b10101100');
+	  HAL_Delay(5000);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -487,15 +493,44 @@ void sendData (char data[]) {
 	}
 }
 
-void ADCtoChar (uint32_t val) {
 
-	int i;
-	for (i = 31; i >= 0; --i) {
-		adcChar[i] = val >> i & 1;
-	    }
+void dataConversion (uint32_t adcVal){
+
+	uint32_t i; //Counter Variable
+	int counter = 0;
+	char binary[32]; //Message Protocol output
+	for (i = 1 << 31; i > 0; i = i / 2){
+		(adcVal & i) ? (binary[counter] = '1') : (binary[counter] = '0'); counter++;
+	}
+
+	int dataCounter = 0;
+	for(int i = 20; i <= 32; i++){
+		binaryShort[dataCounter] = binary[i];
+		dataCounter++;
+	}
 }
 
+void messageProtocol(char binaryData[]) {
 
+	int counter = 0;
+	message[0] = '1';
+	message[1] = '1';
+	for (int i = 0; i <= 12; i++) {
+		message[i+2] = binaryData[i];
+		if (binaryData[i] == '1'){
+			counter ++;
+		}
+	}
+	if (counter % 2 == 0) {
+		message[15] = '0';
+	}
+	else if (counter % 2 == 1) {
+		message[15] = '1';
+	}
+	for (int j = 16; j <= 32; j++) {
+		message [j] = '0';
+	}
+}
 
 /* USER CODE END 4 */
 
