@@ -130,7 +130,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_8); // Toggle blue LED
+	  //HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_8); // Toggle blue LED
 
 	  //Test the pollADC function and display it via UART
 	  //ADC has a maximum value of 4095, which is a resolution of 12 bits
@@ -506,9 +506,7 @@ void Error_Handler(void)
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
   __disable_irq();
-  while (1)
-  {
-  }
+
   /* USER CODE END Error_Handler_Debug */
 }
 
