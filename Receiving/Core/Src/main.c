@@ -1,22 +1,9 @@
 /* USER CODE BEGIN Header */
 /**
 *******************************************************
-Info:		EEE3096S Mini Project Part A 2022
-Author:		Ryan Jones, Natasha Soldin, Kamryn Norton, Khavish Govind
-*******************************************************
-In this practical you will learn to use the ADC on the STM32 using the HAL.
-Here, we will be measuring the voltage on a potentiometer and using its value
-to adjust the brightness of the on board LEDs. We set up an interrupt to switch the
-display between the blue and green LEDs.
-
-Code is also provided to send data from the STM32 to other devices using UART protocol
-by using HAL. You will need Putty or a Python script to read from the serial port on your PC.
-
-UART Connections are as follows: 5V->5V GND->GND RXD->PA2 TXD->PA3(unused).
-Open device manager and go to Ports. Plug in the USB connector with the STM powered on.
-Check the port number (COMx). Open up Putty and create a new Serial session on that COMx
-with baud rate of 9600.
-  ******************************************************************************
+Info:		STM32 ADCs, GPIO Interrupts and PWM with HAL
+Author:		Amaan Vally
+******************************************************************************
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
@@ -42,7 +29,7 @@ with baud rate of 9600.
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
- ADC_HandleTypeDef hadc;
+ADC_HandleTypeDef hadc;
 DMA_HandleTypeDef hdma_adc;
 
 TIM_HandleTypeDef htim3;
@@ -52,13 +39,10 @@ DMA_HandleTypeDef hdma_usart2_tx;
 
 /* USER CODE BEGIN PV */
 char buffer[24];
-char adcChar[16];
+int arr[32];
 
-//TO DO:
-//TASK 1
 //Create global variables for debouncing and delay interval
-int DELAY1 = 66; //Set initial delay to 1000ms = 1s
-int DELAY2 = 2003;
+int DELAY = 1000; //Set initial delay to 1000ms = 1s
 int freq = 1;
 
 /* USER CODE END PV */
@@ -72,14 +56,11 @@ static void MX_ADC_Init(void);
 static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
 void EXTI0_1_IRQHandler(void);
-void pause_sec(float x);
 uint32_t pollADC(void);
 uint32_t ADCtoCRR(uint32_t adc_val);
-uint8_t decToBcd(uint32_t val);
-void setLEDonReceive(char num);
-void ADCtoChar(uint32_t val);
-void sendData(char data[]);
-
+int StartCheck();
+int StopCheck(char data[]);
+int Decode(char data[]);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -120,41 +101,116 @@ int main(void)
   MX_ADC_Init();
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
-
   //Create variables needed in while loop
-
-  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_4); //Start the PWM on TIM3 Channel 4 (Green LED)
+  char data[12];
+  int count = 0;
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
-	  //Test the pollADC function and display it via UART
-	  //ADC has a maximum value of 4095, which is a resolution of 12 bits
-	  //pause_sec(2);
-	  sprintf(buffer, "%ld\n\r",pollADC());
-	  HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 1000);
-
-	  //sprintf(buffer, "%ld\n\r",decToBcd(pollADC()));
+	  //sprintf(buffer, "ADC:%ld\n\r",pollADC());
 	  //HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 1000);
-	  ADCtoChar(pollADC());
-	  sprintf(buffer, "%d\n\r", pollADC());
-	  HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 1000);
 
-	  //setting data in
-	  //char datain = '1';
-	  setLEDonReceive('1');
-	  HAL_Delay(2000); //delay 500ms
+	  if(StartCheck() == 1)
+	  {
+		  HAL_Delay(200);
+		  for(int k = 0; k < 12;k++)
+		  {
+			if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_8) == 1)
+			{
+				data[k] = '1';
+				HAL_Delay(200);
+				count++;
+			}
+			else
+			{
+				data[k] = '0';
+				HAL_Delay(200);
+			}
+		  }
+		  if(count%2 == 0)
+		  {
+			  //sprintf(buffer, "Message not valid");
+			  //HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 1000);
+		  }
+		  if(StopCheck(data) == 0)
+		  {
+			  //sprintf(buffer, "Message Ended");
+			  //HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 1000);
+		  }
 
+
+	  }
+
+  }
+
+	  //sprintf(buffer, "Duty:%ld\n\r", ccr_val);
+	  //HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 1000);
+	  //__HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_4, ccr_val);
+	  //sprintf(buffer, "-------\n\r");
+	  //HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 1000);
+	  //HAL_Delay (DELAY);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-  }
+
   /* USER CODE END 3 */
 }
 
+int Decode(char data[])
+{
+	int total = 0;
+	for(int a = 0; a < 13; a++)
+	{
+		if(data[a] == '1')
+		{
+			total = total + pow(2,a);
+		}
+	}
+	return total;
+}
+
+int StartCheck()
+{
+	for(int a = 0; a < 2;a++)//Starts a loop to check for the first two bits
+	{
+		if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_8) == 1)//Checks if the first bit is a 1
+		{
+			HAL_Delay(200);//Delays of 200ms before second bit is checked
+			if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_8) == 1)//Checks to see if the second bit is a 1
+					{
+						return 1;//Start Sequence is confirmed
+					}
+			else
+				return 0;//Start Sequence  is wrong
+		}
+		else
+			return 0;//Start sequence is wrong
+	}
+
+	return 0;
+}
+
+int StopCheck(char data[])//Check whether the stop sequence is activated
+{
+	int end = 0;
+	for(int k = 0;k < 13;k++)//Runs loop through all 13 data bits
+	{
+		if(data[k] != '0')//Checks if the data is received is 0s
+		{
+			end = 0;//Set end to zero is a zero is received
+		}
+		else
+		{
+			end = 1;//Should a 1 be in the message, end will be become 1
+			break;//Exits the the loop
+		}
+	}
+	return end;//Return the value of end
+
+}
 /**
   * @brief System Clock Configuration
   * @retval None
@@ -172,7 +228,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.HSI14State = RCC_HSI14_ON;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
   RCC_OscInitStruct.HSI14CalibrationValue = 16;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
   RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL12;
   RCC_OscInitStruct.PLL.PREDIV = RCC_PREDIV_DIV1;
@@ -186,7 +242,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV256;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
@@ -381,7 +437,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(LD4_GPIO_Port, LD4_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(PolledADC_GPIO_Port, PolledADC_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : B1_Pin */
   GPIO_InitStruct.Pin = B1_Pin;
@@ -396,12 +452,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LD4_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PA8 */
-  GPIO_InitStruct.Pin = GPIO_PIN_8;
+  /*Configure GPIO pin : PolledADC_Pin */
+  GPIO_InitStruct.Pin = PolledADC_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  HAL_GPIO_Init(PolledADC_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PB6 PB7 */
   GPIO_InitStruct.Pin = GPIO_PIN_6|GPIO_PIN_7;
@@ -418,6 +474,23 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void EXTI0_1_IRQHandler(void)
+{
+
+	//TASK 1
+	//Switch delay frequency
+
+	if (DELAY == 1000) {
+		DELAY = 2000;
+	}
+	else {
+		DELAY = 1000;
+	}
+
+	HAL_GPIO_EXTI_IRQHandler(B1_Pin); // Clear interrupt flags
+}
+
+
 
 
 uint32_t pollADC(void){
@@ -436,85 +509,6 @@ uint32_t pollADC(void){
 	// Code referenced from: https://controllerstech.com/stm32-adc-single-channel/
 }
 
-uint32_t ADCtoCRR(uint32_t adc_val){
-
-	//TASK 2
-	int CRR = 4095;
-
-		if (adc_val<=4095)
-		{
-			CRR = (adc_val*47999)/4095;
-		}
-
-		return CRR;
-}
-
-void pause_sec(float x)
-{
-	//Delay program execution for x seconds
-	int todo = 0;
-	for (int i = 0;i<DELAY1;i++)
-	{
-		for (int j =0 ;j<DELAY2*x;j++)
-		{
-			todo ++;
-		}
-	}
-
-}
-
-uint8_t decToBcd(uint32_t val)
-{
-	//Convert decimal numbers to binary coded decimal
-
-		return (uint8_t)((val/10*16) + (val%10));
-}
-
-void setLEDonReceive(char num)
-{
-	int numInt = (int)num;
-	//Convert a char from the message received into an output on the LED
-	if(num == 49) //49 is ascii for 1
-	{
-		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_SET); //LED on if 1
-	}
-	else if(num == 48) //48 is ascii for 0
-	{
-		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_RESET); //LED off if 0
-	}
-
-}
-
-void bin(uint32_t n)
-{
-    unsigned i;
-    for (i = 1 << 31; i > 0; i = i / 2)
-        (n & i) ? printf("1") : printf("0");
-}
-
-
-void sendData (char data[]) {
-
-	int length = strlen(data);
-	for (int i = 0; i < length; i ++) {
-		if ((int)(data[i]) == 49) {
-			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8,GPIO_PIN_SET);
-			HAL_Delay(500);
-		}
-		else if ((int)(data[i]) == 48) {
-			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8,GPIO_PIN_RESET);
-			HAL_Delay(500);
-		}
-	}
-}
-
-void ADCtoChar (uint32_t val) {
-
-	int i;
-	for (i = 31; i >= 0; --i) {
-		adcChar[i] = val >> i & 1;
-	    }
-}
 
 /* USER CODE END 4 */
 

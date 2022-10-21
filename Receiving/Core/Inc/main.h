@@ -64,6 +64,8 @@ void Error_Handler(void);
 #define B1_EXTI_IRQn EXTI0_1_IRQn
 #define LD4_Pin GPIO_PIN_8
 #define LD4_GPIO_Port GPIOC
+#define PolledADC_Pin GPIO_PIN_8
+#define PolledADC_GPIO_Port GPIOA
 #define SWDIO_Pin GPIO_PIN_13
 #define SWDIO_GPIO_Port GPIOA
 #define SWCLK_Pin GPIO_PIN_14
