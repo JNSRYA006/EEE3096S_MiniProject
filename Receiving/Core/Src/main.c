@@ -161,20 +161,32 @@ int main(void)
   /* USER CODE END 3 */
 }
 
+/**
+* @function Decode
+* @abstract Converts a binary char array into the correct decimal value
+* @param data[] char array to be converted to a double
+* @return double The double value that corresponds to the char array that is given as a parameter
+*/
 double Decode(char data[])
 {
 	double total = 0;//creates a total varable for the binary value
-	for(int a = 11; a > 0; a--)//Runs a loop to run through the data is big endian format
+	for(int a = 0; a <= 11; a++)//Runs a loop to run through the data is big endian format
 	{
 
-		if(data[a] == '1')//Checks when the vaue of t he array is  1
+		if(data[a] == '1')//Checks when the vaue of the array is  1
 		{
-			double power = pow(2.0,(double)a);//Adds the 1 to the correct power of 2 into the total variable
+			double power = pow(2.0,(double)(11-a));//Adds the 1 to the correct power of 2 into the total variable
 			total = total + power;
 		}
 	}
 	return total;//Returns the final decimal value
 }
+/**
+* @function parityCheck
+* @abstract Checks if the transferred parity bit is correct
+* @param int The count of the total number of 1s in the message sequence
+* @return int 1 if the parity is correct, 0 if not correct
+*/
 
 int parityCheck(int count)//Checks whether the parity bit of the data matches the data
 {
@@ -187,7 +199,13 @@ int parityCheck(int count)//Checks whether the parity bit of the data matches th
 		return 0;//Returns 0 if the partiy does not match
 }
 
-int StartCheck()
+/**
+* @function StartCheck
+* @abstract Checks if the start condition of the message protocol is met
+* @param void Reads in the value from the appropriate GPIO Pin
+* @return int 1 if the start protocol is met, 0 if it is not met
+*/
+int StartCheck(void)
 {
 	for(int a = 0; a < 2;a++)//Starts a loop to check for the first two bits
 	{
@@ -208,6 +226,12 @@ int StartCheck()
 	return 0;
 }
 
+/**
+* @function StopCheck
+* @abstract Checks if the stop condition of the message protocol is met
+* @param data[] A char array of the data that is being checked for a stop condition
+* @return int 1 if the stop condition is met, 0 if it is not met
+*/
 int StopCheck(char data[])//Check whether the stop sequence is activated
 {
 	int end = 0;

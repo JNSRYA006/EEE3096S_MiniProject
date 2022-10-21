@@ -127,15 +127,20 @@ int main(void)
   {
 	  //HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_8); // Toggle blue LED
 
-	  sprintf(buffer, "adc: %ld\n\r",500);
+	  sprintf(buffer, "adc: %ld\n\r",pollADC());
 	  HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 1000);
 
 	  //Testing char array from adc uint value
-	  dataConversion(500);
+	  dataConversion(pollADC());
 	  messageProtocol(binaryShort);
 	  for (int i =0; i <= 27; i++) {
 		  sprintf(buffer, "msg: %c\n\r",message[i]);
-		  HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 1000);
+		  if (message[i] == '1') {
+			  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8,GPIO_PIN_SET);
+		  }
+		  else if (message[i] == '0') {
+			  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8,GPIO_PIN_RESET);
+		  }
 		  HAL_Delay(200);
 	  }
 
