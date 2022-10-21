@@ -44,6 +44,8 @@ int arr[32];
 //Create global variables for debouncing and delay interval
 int DELAY = 1000; //Set initial delay to 1000ms = 1s
 int freq = 1;
+char data[]={0,1,1,0,1,0,0,0,0,0,0,1,1};
+int count = 5;
 
 /* USER CODE END PV */
 
@@ -60,7 +62,7 @@ uint32_t pollADC(void);
 uint32_t ADCtoCRR(uint32_t adc_val);
 int StartCheck();
 int StopCheck(char data[]);
-int Decode(char data[]);
+double Decode(char data[]);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -102,56 +104,56 @@ int main(void)
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
   //Create variables needed in while loop
-  char data[12];
-  int count = 0;
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  //sprintf(buffer, "ADC:%ld\n\r",pollADC());
-	  //HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 1000);
 
-	  if(StartCheck() == 1)
+
+	  if(StartCheck() == 1)//Checks if the start sequence has occurred
 	  {
-		  HAL_Delay(200);
-		  for(int k = 0; k < 12;k++)
+		  HAL_Delay(200);//Delays by 200ms
+		  for(int k = 0; k < 13;k++)//Runs a loop to store the 13 bits of data into a char array
 		  {
-			if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_8) == 1)
+			if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_8) == 1)//Stores a value of 1 if the GPIO Pin reads a high
 			{
-				data[k] = '1';
-				HAL_Delay(200);
-				count++;
+				data[k] = '1';//Sets the value of 1 into the char array
+				HAL_Delay(200);//Delays  by 200ms
+				count++;//Adds the number of 1 to the total to use for the parity check
 			}
 			else
 			{
-				data[k] = '0';
-				HAL_Delay(200);
+				data[k] = '0';//Sets a value of 0 into the char array
+				HAL_Delay(200);//Delays by 200ms
 			}
 		  }
-		  if(count%2 == 0)
+
+		  if(parityCheck(count) == 0)//If parity fails message displays
 		  {
-			  //sprintf(buffer, "Message not valid");
-			  //HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 1000);
+			  sprintf(buffer, "Message not valid");
+			  HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 1000);
 		  }
-		  if(StopCheck(data) == 0)
+		  else
 		  {
-			  //sprintf(buffer, "Message Ended");
-			  //HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 1000);
+			  sprintf(buffer, "Message IS valid");//If parity passes
+			  HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 1000);
+			  sprintf(buffer, "Final Value:%ld\n\r", Decode(data));//Displays the binary message sent as a decimal number
+			  HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 1000);
+		  }
+
+		  if(StopCheck(data) == 0)//Checks if the start sequence was correct
+		  {
+			  sprintf(buffer, "Message Ended");
+			  HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 1000);
 		  }
 
 
-	  }
+	 // }
 
   }
-
-	  //sprintf(buffer, "Duty:%ld\n\r", ccr_val);
-	  //HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 1000);
-	  //__HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_4, ccr_val);
-	  //sprintf(buffer, "-------\n\r");
-	  //HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 1000);
-	  //HAL_Delay (DELAY);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -159,17 +161,30 @@ int main(void)
   /* USER CODE END 3 */
 }
 
-int Decode(char data[])
+double Decode(char data[])
 {
-	int total = 0;
-	for(int a = 0; a < 13; a++)
+	double total = 0;//creates a total varable for the binary value
+	for(int a = 11; a > 0; a--)//Runs a loop to run through the data is big endian format
 	{
-		if(data[a] == '1')
+
+		if(data[a] == '1')//Checks when the vaue of t he array is  1
 		{
-			total = total + pow(2,a);
+			double power = pow(2.0,(double)a);//Adds the 1 to the correct power of 2 into the total variable
+			total = total + power;
 		}
 	}
-	return total;
+	return total;//Returns the final decimal value
+}
+
+int parityCheck(int count)//Checks whether the parity bit of the data matches the data
+{
+	int parity = count%2;//stores the value of the number of 1's mod 2 into a variable
+	if(data[12] == parity)//Compares the 13th bit of data(parity bit) to the the parity calculated from the data
+	{
+		return 1;//Returns 1 if the parity matches
+	}
+	else
+		return 0;//Returns 0 if the partiy does not match
 }
 
 int StartCheck()
@@ -521,9 +536,6 @@ void Error_Handler(void)
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
   __disable_irq();
-  while (1)
-  {
-  }
   /* USER CODE END Error_Handler_Debug */
 }
 
