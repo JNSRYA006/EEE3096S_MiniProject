@@ -4,18 +4,13 @@
 Info:		EEE3096S Mini Project Part A 2022
 Author:		Ryan Jones, Natasha Soldin, Kamryn Norton, Khavish Govind
 *******************************************************
-In this practical you will learn to use the ADC on the STM32 using the HAL.
-Here, we will be measuring the voltage on a potentiometer and using its value
-to adjust the brightness of the on board LEDs. We set up an interrupt to switch the
-display between the blue and green LEDs.
+In this mini-project, two STM boards will be used to transmit and receive a message.
+This code makes up the transmitting side of the communication.
 
-Code is also provided to send data from the STM32 to other devices using UART protocol
-by using HAL. You will need Putty or a Python script to read from the serial port on your PC.
-
-UART Connections are as follows: 5V->5V GND->GND RXD->PA2 TXD->PA3(unused).
-Open device manager and go to Ports. Plug in the USB connector with the STM powered on.
-Check the port number (COMx). Open up Putty and create a new Serial session on that COMx
-with baud rate of 9600.
+The transmission occurs by polling an internal ADC on PC7 which is connected to a POT.
+This polled value is then converted into a binary char array which gets its start and stop conditions
+added to it before being sent to the receiver either using a GPIO connection or through a blinking LED
+which is read using an LDR on the receiver end.
   ******************************************************************************
   */
 /* USER CODE END Header */
