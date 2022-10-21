@@ -135,25 +135,18 @@ int main(void)
   {
 	  //HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_8); // Toggle blue LED
 
-	  //Test the pollADC function and display it via UART
-	  //ADC has a maximum value of 4095, which is a resolution of 12 bits
-	  //pause_sec(2);
 	  sprintf(buffer, "adc: %ld\n\r",500);
 	  HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 1000);
 
 	  //Testing char array from adc uint value
 	  dataConversion(500);
 	  messageProtocol(binaryShort);
-	  for (int i =0; i <= 32; i++) {
+	  for (int i =0; i <= 27; i++) {
 		  sprintf(buffer, "msg: %c\n\r",message[i]);
 		  HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 1000);
 		  HAL_Delay(200);
 	  }
 
-	  //sprintf(buffer, "%ld\n\r",sendData('0b10101010'));
-	  //HAL_UART_Transmit(&huart2, buffer, sizeof(buffer), 1000);
-	  //HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8,);
-	  //sendData('0b10101100');
 	  HAL_Delay(5000);
     /* USER CODE END WHILE */
 
