@@ -56,7 +56,7 @@ DMA_HandleTypeDef hdma_usart2_tx;
 char buffer[24];
 char data[64];
 char binaryShort[12];
-char message[28];
+char message[27];
 
 //TO DO:
 //TASK 1
@@ -441,9 +441,15 @@ void EXTI0_1_IRQHandler(void)
 	HAL_GPIO_EXTI_IRQHandler(B1_Pin); // Clear interrupt flags
 }
 
+/**
+ * @function pollADC
+ * @abstract Poll the ADC on PA7 on the transmitting STM. The input to this pin is the potentiometer
+ * @param void
+ * @result uint32_t A value that the ADC reads in from the potentiometer
+ *
+ */
 uint32_t pollADC(void){
 
-	//TASK 1
 	HAL_ADC_Start(&hadc); //Start the ADC
 
 	HAL_ADC_PollForConversion(&hadc, 1); //Poll for conversion
@@ -478,6 +484,9 @@ uint8_t decToBcd(uint32_t val)
 		return (uint8_t)((val/10*16) + (val%10));
 }
 
+/**
+ * The sendData method takes
+ */
 void sendData (char data[]) {
 
 	int length = strlen(data);
@@ -493,40 +502,64 @@ void sendData (char data[]) {
 	}
 }
 
-
+/**
+ * @function dataConversion
+ * @abstract Converts a unint32_t into a binary char array of length 12
+ * @param uint32_t The ADC values that is polled using the pollADC method.
+ * This is converted to a 12-bit binary char array as the resolution of the ADC is 12-bits
+ * @return void The global variable binaryShort[12] is updated when this method is run
+ */
 void dataConversion (uint32_t adcVal){
 
 	uint32_t i; //Counter Variable
 	int counter = 0;
 	char binary[32]; //Message Protocol output
-	for (i = 1 << 31; i > 0; i = i / 2){
+	for (i = 1 << 31; i > 0; i = i / 2){ //Loop through the 32-bit uint32_t variable and convert to a binary char
 		(adcVal & i) ? (binary[counter] = '1') : (binary[counter] = '0'); counter++;
 	}
 
 	int dataCounter = 0;
-	for(int i = 20; i <= 32; i++){
+	for(int i = 20; i <= 32; i++){ //Loop through the 32-bit char array and add the last 12-bits to the binaryShort[] array
+								   //These 12-bits are the 12-bit ADC value
 		binaryShort[dataCounter] = binary[i];
 		dataCounter++;
 	}
 }
 
+/**
+ * @function messageProtocol
+ * @abstract Converts a 12-bit char array to the desired message protocol for transmission
+ * @param 12-bit char array
+ * @return void The global variable message[27] is updated when the method is run
+ */
 void messageProtocol(char binaryData[]) {
 
-	int counter = 0;
-	message[0] = '1';
-	message[1] = '1';
+	int counter = 0; //Parity check counter of # of 1s
+
+	//Add start bits
+	message[0] = '1'; //Sets the first bit of the message to 1
+	message[1] = '1'; //Sets the second bit of the message to 1
+
+	//Loop through the polled ADC binary value and add them to the message array
+	//in the correct position after the start bits
 	for (int i = 0; i <= 12; i++) {
 		message[i+2] = binaryData[i];
+		//Count the number of 1s in the ADC binary message in order to check parity
 		if (binaryData[i] == '1'){
 			counter ++;
 		}
 	}
+
+	//Add an odd parity bit after the message
 	if (counter % 2 == 0) {
+		// If there are an odd number of 1s, add a 0 to the parity bit to satisfy odd parity
 		message[15] = '0';
 	}
 	else if (counter % 2 == 1) {
+		// If there are an even number of 1s, add a 1 to the parity bit to satisfy odd parity
 		message[15] = '1';
 	}
+	//Add the stop condition to the last 13 bits of the message
 	for (int j = 16; j <= 32; j++) {
 		message [j] = '0';
 	}
