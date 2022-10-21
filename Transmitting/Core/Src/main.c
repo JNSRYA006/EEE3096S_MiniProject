@@ -53,9 +53,6 @@ char data[64];
 char binaryShort[12];
 char message[27];
 
-//TO DO:
-//TASK 1
-//Create global variables for debouncing and delay interval
 int DELAY = 1000; //Set initial delay to 1000ms = 1s
 int freq = 1;
 
